@@ -1,0 +1,92 @@
+// Este schema espelha as tabelas que JÁ EXISTEM no servidor (criadas pelo Workbench).
+// O usuário do banco não tem permissão de ALTER, então NÃO use `prisma db push`
+// nem `prisma migrate`. Use apenas `npx prisma generate`.
+//
+// Os @default(...) abaixo valem só no Prisma (em tempo de execução);
+// não existem como DEFAULT nas colunas do MySQL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model EtapaAvaliacao {
+  id          Int         @id @default(autoincrement()) @map("etapa_avaliacao_id")
+  responsavel String      @map("etapa_avaliacao_responsavel") @db.VarChar(45)
+  status      Int         @default(1) @map("etapa_avaliacao_status")
+  nome        String      @map("etapa_avaliacao_nome") @db.VarChar(100)
+  // Vem do microsserviço de Vagas: só o id, sem chave estrangeira.
+  vagaId      Int         @map("vaga_id")
+  avaliacoes  Avaliacao[]
+
+  @@map("etapa_avaliacao")
+}
+
+model Candidatura {
+  id         Int                 @id @default(autoincrement()) @map("candidatura_id")
+  status     Int                 @default(1) @map("candidatura_status")
+  situacao   CandidaturaSituacao @default(Em_Analise) @map("candidatura_situação")
+  // Vêm de outros microsserviços (Usuários e Vagas): só os ids.
+  usuarioId  Int                 @map("usuario_id")
+  vagaId     Int                 @map("vaga_id")
+  data       DateTime            @default(now()) @map("candidatura_data") @db.DateTime(0)
+  avaliacoes Avaliacao[]
+
+  @@map("candidatura")
+}
+
+model Avaliacao {
+  id               Int               @id @default(autoincrement()) @map("avaliacao_id")
+  situacao         AvaliacaoSituacao @default(Pendente) @map("avaliacao_situacao")
+  status           Int               @default(1) @map("avaliacao_status")
+  dataInicio       DateTime          @default(now()) @map("avaliacao_data_inicio") @db.DateTime(0)
+  dataFim          DateTime?         @map("avaliacao_data_fim") @db.DateTime(0)
+  nota             Int?              @map("avaliacao_nota")
+  feedback         String?           @map("avaliacao_feedback") @db.Text
+  // Recrutador que avaliou (microsserviço de Usuários): só o id.
+  usuarioId        Int?              @map("usuario_id")
+  etapaAvaliacaoId Int               @map("etapa_avaliacao_id")
+  candidaturaId    Int               @map("candidatura_id")
+
+  atividades     Atividade[]
+  candidatura    Candidatura    @relation(fields: [candidaturaId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_candidatura1")
+  etapaAvaliacao EtapaAvaliacao @relation(fields: [etapaAvaliacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_etapa_avaliacao")
+
+  @@index([candidaturaId], map: "fk_avaliacao_candidatura1_idx")
+  @@index([etapaAvaliacaoId], map: "fk_avaliacao_etapa_avaliacao_idx")
+  @@map("avaliacao")
+}
+
+model Atividade {
+  id          Int       @id @default(autoincrement()) @map("atividade_id")
+  titulo      String    @map("atividade_titulo") @db.VarChar(100)
+  descricao   String    @map("atividade_descricao") @db.Text
+  tipo        String    @map("atividade_tipo") @db.VarChar(45)
+  link        String    @map("atividade_link") @db.VarChar(255)
+  dataInicio  DateTime  @map("atividade_data_inicio") @db.DateTime(0)
+  dataFim     DateTime  @map("atividade_data_fim") @db.DateTime(0)
+  status      Int       @default(1) @map("atividade_status")
+  avaliacaoId Int       @map("avaliacao_id")
+  avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_atividade_avaliacao1")
+
+  @@index([avaliacaoId], map: "fk_atividade_avaliacao1_idx")
+  @@map("atividade")
+}
+
+// Valores EXATOS do ENUM no MySQL (na API use o nome da esquerda, ex.: "Em_Analise").
+enum AvaliacaoSituacao {
+  Pendente
+  Em_Andamento @map("Em Andamento")
+  Aprovado
+  Reprovado
+}
+
+enum CandidaturaSituacao {
+  Em_Analise @map("Em Analise")
+  Aprovado
+  Reprovado
+}
