@@ -85,3 +85,4 @@ No Swagger, clique em **Authorize** e cole o token (ou a API key).
 - Valores dos enums na API: candidatura `Em_Analise | Aprovado | Reprovado`;
   avaliação `Pendente | Em_Andamento | Aprovado | Reprovado`.
 - Todos os ids (`*_id`) são AUTO_INCREMENT no banco, inclusive `avaliacao_id`.
+"# ProjetoIntegradorV_Candidaturas_Miscrosservico" 
