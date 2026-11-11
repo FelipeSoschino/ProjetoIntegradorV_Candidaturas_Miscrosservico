@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  candidaturas-microsservico:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: candidaturas-microsservico:latest
+
+    container_name: candidaturas-microsservico
+
+    ports:
+      - "7532:7532"
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: "7532"
+    
+    restart: always
